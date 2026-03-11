@@ -11,7 +11,7 @@ THM System v2 dirancang untuk mendukung proses operasional peminjaman alat secar
 - Petugas: mengelola alur peminjaman/pengembalian.
 - Peminjam: mengajukan peminjaman dan pengembalian item.
 
-Versi 2 menambahkan kemampuan batch borrow (mengajukan beberapa item sekaligus, kuantitas per item) melalui form halaman dan modal konfirmasi.
+Versi 2 menambahkan kemampuan batch borrow (mengajukan beberapa item sekaligus, kuantitas per item) melalui Cart dan halaman peminjaman.
 
 ---
 
@@ -35,60 +35,64 @@ Backend berjalan default di port `3000` dan mengekspose semua endpoint pada pref
 - State auth global: Context API
 
 Frontend mengonsumsi API backend melalui service terpusat di `src/services/api.js`.
+Frontend berjalan default di port `5173` (Vite). Proxy `/api` ke `http://localhost:3000` tersedia di `vite.config.js`.
 
 ---
 
 ## Fitur Utama
 
-## 1. Autentikasi dan Otorisasi
+### 1. Autentikasi dan Otorisasi
 
 - Login/register pengguna.
 - Penyimpanan token JWT di localStorage.
 - Verifikasi token untuk route yang dilindungi.
 - Role-based access control (Admin/Petugas/Peminjam).
 
-## 2. Dashboard Dinamis per Role
+### 2. Dashboard Dinamis per Role
 
 - Statistik item total dan tersedia.
 - Statistik peminjaman pending/aktif untuk admin/petugas.
 - Statistik peminjaman pribadi untuk peminjam.
 - Ringkasan transaksi terbaru.
 
-## 3. Manajemen Item
+### 3. Manajemen Item
 
 - Lihat daftar item.
 - CRUD item (admin).
-- Tracking stok (total, available, dipinjam hanya setelah approve).
-- Menampilkan jumlah request yang belum di-approve sebagai Dalam Antrian.
+- Tracking stok (total, available, dan status peminjaman per item).
+- Available berkurang saat request dibuat (pending) dan dikembalikan saat return, reject, cancel, atau expire.
+- Item yang stoknya belum cukup masuk antrean (queued) dan diproses FIFO saat stok tersedia.
 - Kondisi item (normal, ok, not good, broken).
 
-## 4. Manajemen Kategori
+### 4. Manajemen Kategori
 
 - CRUD kategori (admin).
 - Pengelompokan item agar lebih rapi.
 
-## 5. Manajemen User
+### 5. Manajemen User
 
 - Lihat daftar user (admin).
 - Update data user dan role.
 - Hapus user.
 
-## 6. Peminjaman (Borrow)
+### 6. Peminjaman (Borrow)
 
-- Peminjam membuat pengajuan peminjaman.
-- Admin/petugas melakukan approve/reject.
-- Filter data peminjaman (all/pending/active).
-- Fitur batch borrow pada UI: user dapat memilih beberapa item, mengatur quantity per item, lalu konfirmasi batch dalam satu submit.
-- Saat request dibuat, stok available langsung berkurang (reserve) untuk status pending. Jika stok tidak cukup, item masuk status queued.
+- Peminjam membuat pengajuan peminjaman single atau batch dari Cart.
+- Maksimal 20 item per permintaan.
+- Request batch menyimpan status agregat (submitted, queued, processing, approved, partially_approved, completed, rejected, cancelled).
+- Admin/petugas melakukan approve/reject per item atau approve batch.
+- Peminjam dapat membatalkan item berstatus pending/queued.
+- Saat request dibuat, stok available di-reserve untuk item pending; item yang tidak cukup stok masuk antrean (queued).
+- Endpoint mendukung header `Idempotency-Key` untuk mencegah double submit.
 
-## 7. Pengembalian (Return)
+### 7. Pengembalian (Return)
 
-- Peminjam dapat request return.
+- Peminjam dapat request return per item atau per batch.
 - Admin/petugas konfirmasi pengembalian.
-- Sistem mengembalikan stok item secara otomatis setelah return dikonfirmasi.
+- Sistem mengembalikan stok item secara otomatis setelah return dikonfirmasi dan memproses antrean queued.
 - Perhitungan keterlambatan/denda pada alur pengembalian.
 
-## 8. Log Aktivitas
+### 8. Log Aktivitas
 
 - Aktivitas penting dicatat untuk audit (khusus admin).
 
@@ -117,7 +121,8 @@ thmSYS_v2/
 |  `- package.json
 `- docs/
    |- PROJECT_SUMMARY.md
-   `- SETUP_GUIDE.md
+   |- ERD.drawio
+   `- FLOWCHART THMs.drawio
 ```
 
 ---
@@ -152,14 +157,20 @@ thmSYS_v2/
 
 ### Peminjaman
 - `GET /api/peminjaman/my`
+- `GET /api/peminjaman/requests`
+- `GET /api/peminjaman/batches`
 - `GET /api/peminjaman/pending`
 - `GET /api/peminjaman/active`
 - `GET /api/peminjaman/return-requests`
+- `GET /api/peminjaman/expire-pending`
 - `GET /api/peminjaman`
 - `GET /api/peminjaman/:id`
 - `POST /api/peminjaman`
+- `PUT /api/peminjaman/request/:requestId/approve`
+- `PUT /api/peminjaman/request/:requestId/return`
 - `PUT /api/peminjaman/:id/approve`
 - `PUT /api/peminjaman/:id/reject`
+- `PUT /api/peminjaman/:id/cancel`
 - `PUT /api/peminjaman/:id/return`
 - `DELETE /api/peminjaman/:id`
 
@@ -178,13 +189,13 @@ thmSYS_v2/
 ## Alur Utama Proses Bisnis
 
 1. User login ke sistem.
-2. Peminjam memilih item dan membuat pengajuan peminjaman batch.
-3. Admin/petugas meninjau pengajuan lalu approve/reject.
-4. Saat request dibuat, stok available berkurang untuk pending (reserve). Jika stok tidak cukup, status menjadi queued.
-5. Jika approve, status peminjaman berubah menjadi aktif (taken) dan tercatat sebagai Dipinjam di manajemen item.
-6. Peminjam mengajukan return saat item selesai dipakai.
-7. Admin/petugas mengonfirmasi return.
-8. Status peminjaman selesai (available), stok item kembali bertambah.
+2. Peminjam memilih item, menambahkan ke Cart, lalu submit batch peminjaman.
+3. Sistem membuat request batch, reserve stok untuk item yang cukup (pending) dan menandai item lain sebagai queued.
+4. Admin/petugas meninjau request dan approve/reject per item atau approve batch.
+5. Item yang disetujui berubah menjadi `taken` dan tercatat sebagai Dipinjam di manajemen item.
+6. Peminjam mengajukan return per item atau per batch saat item selesai dipakai.
+7. Admin/petugas mengonfirmasi return, stok kembali, dan antrean queued diproses.
+8. Status batch disinkronkan otomatis (approved/partially_approved/completed/rejected/cancelled).
 
 ---
 
@@ -213,7 +224,10 @@ Default API frontend mengarah ke: `http://localhost:3000/api`
 ## Catatan
 
 - Pastikan MySQL aktif sebelum menjalankan backend.
+- Konfigurasi database ada di `backend/db.js` (default `db_peminjaman`, user `root`, password kosong).
 - Sistem memiliki inisialisasi database/tabel otomatis pada startup backend.
+- Pending lebih dari 24 jam akan di-expire otomatis; interval job dapat diatur via `EXPIRE_PENDING_INTERVAL_MINUTES` (default 15 menit).
+- `POST /api/peminjaman` mendukung header `Idempotency-Key` untuk mencegah submit ganda.
 - CORS backend sudah disiapkan untuk environment localhost frontend.
 
 ---
