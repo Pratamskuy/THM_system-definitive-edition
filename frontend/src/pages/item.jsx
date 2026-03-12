@@ -9,6 +9,7 @@ function Items() {
   const { addItem, items: cartItems, totalQuantity } = useCart();
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -32,11 +33,25 @@ function Items() {
     return map;
   }, [cartItems]);
 
+  const visibleItems = useMemo(() => {
+    let filtered = items;
+
+    if (categoryFilter !== 'all') {
+      filtered = items.filter((item) => {
+        const itemCategoryId = String(item.categories_id || item.category_id || '');
+        const itemCategoryName = String(item.categories || '').toLowerCase();
+        const filterValue = String(categoryFilter).toLowerCase();
+
+        return itemCategoryId === String(categoryFilter) || itemCategoryName === filterValue;
+      });
+    }
+
+    return filtered;
+  }, [items, categoryFilter]);
+
   useEffect(() => {
     loadItems();
-    if (!isShopMode) {
-      loadCategories();
-    }
+    loadCategories();
   }, [isShopMode]);
 
   const loadItems = async () => {
@@ -236,9 +251,31 @@ function Items() {
               <h1 className="card-header">Borrow Items</h1>
               <p className="card-body">Select items and add them to your cart before borrowing.</p>
             </div>
-            <Link to="/cart" className="btn btn-primary">
-              Go to Cart ({totalQuantity})
-            </Link>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <select
+                className="form-input"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                style={{ minWidth: '220px', width: '220px' }}
+              >
+                <option value="all">Semua Kategori</option>
+                {(categories.length > 0 ? categories : items)
+                  .map((cat) => {
+                    const id = String(cat.id || cat.categories_id || cat.category_id || cat.category || '');
+                    const name = String(cat.categories || cat.category || '').trim();
+                    if (!id || !name) return null;
+                    return (
+                      <option key={id} value={id}>
+                        {name}
+                      </option>
+                    );
+                  })
+                  .filter(Boolean)}
+              </select>
+              <Link to="/cart" className="btn btn-primary">
+                Go to Cart ({totalQuantity})
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -251,7 +288,7 @@ function Items() {
           </div>
         ) : (
           <div className="shop-grid">
-            {items.map((item) => {
+            {visibleItems.map((item) => {
               const available = Number(item.available) || 0;
               const maxStock = getMaxStock(item);
               const cartQty = cartLookup.get(item.id) || 0;
@@ -331,8 +368,10 @@ function Items() {
   return (
     <div>
       <div className="card">
-        <div className="flex justify-between items-center">
-          <h1 className="card-header">Manajemen Item</h1>
+        <div className="flex justify-between items-center" style={{ gap: '1rem', flexWrap: 'wrap' }}>
+          <h1 className="card-header" style={{ margin: 0 }}>
+              Manajemen Item
+            </h1>
           {isAdmin() && (
             <button className="btn btn-primary" onClick={openCreateModal}>
               + Tambah Item
@@ -342,7 +381,25 @@ function Items() {
       </div>
 
       <div className="card">
-        {items.length === 0 ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {isAdmin() && (
+              <select
+                className="form-input"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                style={{ minWidth: '220px', width: '220px' }}
+              >
+                <option value="all">Semua Kategori</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.categories}
+                  </option>
+                ))}
+              </select>
+            )}
+            
+          </div>
+        {visibleItems.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">📦</div>
             <p>Belum ada item</p>
@@ -355,6 +412,7 @@ function Items() {
                   <th>ID</th>
                   <th>Nama Item</th>
                   <th>Deskripsi</th>
+                  <th>Kategori</th>
                   <th>Total</th>
                   <th>Tersedia</th>
                   <th>Dipinjam</th>
@@ -364,11 +422,12 @@ function Items() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => (
+                {visibleItems.map((item) => (
                   <tr key={item.id}>
                     <td>#{item.id}</td>
                     <td>{item.item_name}</td>
                     <td>{item.description || '-'}</td>
+                    <td>{item.categories || '-'}</td>
                     <td>{item.total}</td>
                     <td>
                       <span className={`badge ${item.available > 0 ? 'badge-approved' : 'badge-rejected'}`}>

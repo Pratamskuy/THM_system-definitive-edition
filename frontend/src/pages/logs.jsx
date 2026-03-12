@@ -22,6 +22,18 @@ function Logs() {
     }
   };
 
+  const getActionBadgeClass = (action) => {
+    if (!action) return 'badge-warning';
+    const normalized = action.toString().toLowerCase();
+    if (normalized.includes('create') || normalized.includes('add') || normalized.includes('insert')) return 'badge-approved';
+    if (normalized.includes('update') || normalized.includes('edit')) return 'badge-waiting';
+    if (normalized.includes('delete') || normalized.includes('remove')) return 'badge-rejected';
+    if (normalized.includes('approve') || normalized.includes('confirm')) return 'badge-approved';
+    if (normalized.includes('reject') || normalized.includes('failed') || normalized.includes('error')) return 'badge-rejected';
+    if (normalized.includes('login') || normalized.includes('logout')) return 'badge-available';
+    return 'badge-pending';
+  };
+
   const filteredLogs = useMemo(() => {
     const keyword = query.trim().toLowerCase();
     if (!keyword) return logs;
@@ -104,7 +116,11 @@ function Logs() {
                     <tr key={log.id}>
                       <td>{timestamp ? new Date(timestamp).toLocaleString('id-ID') : '-'}</td>
                       <td>{userName}</td>
-                      <td>{action}</td>
+                      <td>
+                        <span className={`badge ${getActionBadgeClass(action)}`}>
+                          {action}
+                        </span>
+                      </td>
                       <td>{table}</td>
                       <td>{detail}</td>
                     </tr>

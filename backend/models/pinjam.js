@@ -7,6 +7,8 @@ const BORROW_SELECT_FIELDS = `
     COALESCE(u.full_name, u.name) AS full_name,
     u.email AS email,
     i.item_name,
+    i.categories_id,
+    c.categories AS category,
     officer.full_name AS officer_name,
     r.return_date,
     r.late,
@@ -385,6 +387,7 @@ const getAll = (callback) => {
         FROM borrow_data b
         LEFT JOIN user_data u ON b.id_user = u.id
         LEFT JOIN items i ON b.id_items = i.id
+        LEFT JOIN categories c ON i.categories_id = c.id
         LEFT JOIN user_data officer ON b.id_officer_approval = officer.id
         LEFT JOIN return_data r ON r.borrow_id = b.id
         LEFT JOIN borrow_requests br ON br.id = b.request_id
@@ -406,6 +409,7 @@ const getRequestBatches = (callback) => {
             b.id AS borrow_id,
             b.id_items,
             i.item_name,
+            c.categories AS category,
             b.item_count,
             b.return_date_expected,
             b.status AS borrow_status
@@ -413,6 +417,7 @@ const getRequestBatches = (callback) => {
         LEFT JOIN user_data u ON br.id_user = u.id
         LEFT JOIN borrow_data b ON b.request_id = br.id
         LEFT JOIN items i ON b.id_items = i.id
+        LEFT JOIN categories c ON i.categories_id = c.id
         ORDER BY br.submitted_at DESC, b.id ASC
     `;
 
@@ -471,6 +476,7 @@ const getById = (id, callback) => {
         FROM borrow_data b
         LEFT JOIN user_data u ON b.id_user = u.id
         LEFT JOIN items i ON b.id_items = i.id
+        LEFT JOIN categories c ON i.categories_id = c.id
         LEFT JOIN user_data officer ON b.id_officer_approval = officer.id
         LEFT JOIN return_data r ON r.borrow_id = b.id
         LEFT JOIN borrow_requests br ON br.id = b.request_id
@@ -489,6 +495,8 @@ const getByUser = (id_user, callback) => {
             COALESCE(u.full_name, u.name) AS full_name,
             b.id_items,
             i.item_name,
+            i.categories_id,
+            c.categories AS category,
             b.item_count,
             b.borrow_date,
             b.return_date_expected,
@@ -501,6 +509,7 @@ const getByUser = (id_user, callback) => {
             br.status AS request_status
         FROM borrow_data b
         LEFT JOIN items i ON b.id_items = i.id
+        LEFT JOIN categories c ON i.categories_id = c.id
         LEFT JOIN user_data u ON b.id_user = u.id
         LEFT JOIN return_data r ON r.borrow_id = b.id
         LEFT JOIN borrow_requests br ON br.id = b.request_id
@@ -524,6 +533,7 @@ const getPending = (callback) => {
         FROM borrow_data b
         LEFT JOIN user_data u ON b.id_user = u.id
         LEFT JOIN items i ON b.id_items = i.id
+        LEFT JOIN categories c ON i.categories_id = c.id
         LEFT JOIN user_data officer ON b.id_officer_approval = officer.id
         LEFT JOIN return_data r ON r.borrow_id = b.id
         LEFT JOIN borrow_requests br ON br.id = b.request_id
@@ -541,6 +551,7 @@ const getActive = (callback) => {
         FROM borrow_data b
         LEFT JOIN user_data u ON b.id_user = u.id
         LEFT JOIN items i ON b.id_items = i.id
+        LEFT JOIN categories c ON i.categories_id = c.id
         LEFT JOIN user_data officer ON b.id_officer_approval = officer.id
         LEFT JOIN return_data r ON r.borrow_id = b.id
         LEFT JOIN borrow_requests br ON br.id = b.request_id

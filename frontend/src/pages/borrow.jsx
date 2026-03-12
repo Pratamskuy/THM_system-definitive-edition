@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { borrowAPI, returnAPI } from '../services/api';
+import { borrowAPI, returnAPI, categoryAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 function Borrows() {
@@ -21,6 +21,10 @@ function Borrows() {
   useEffect(() => {
     loadBorrows();
   }, [filter]);
+
+  useEffect(() => {
+    // no category filter on borrow page for admin now: moved to Items page
+  }, []);
 
   useEffect(() => {
     if (isPrinting && isPrintReady) {
@@ -293,6 +297,8 @@ function Borrows() {
     .map((notice) => `${notice.item_name} (#${notice.id})`)
     .join(', ');
 
+  const visibleBorrows = borrows;
+
   return (
     <div>
       <div className="card no-print">
@@ -483,6 +489,7 @@ function Borrows() {
                   <th>ID</th>
                   <th>Borrower</th>
                   <th>Item</th>
+                  <th>Category</th>
                   <th>Quantity</th>
                   <th>Borrow Date</th>
                   <th>Expected Return</th>
@@ -492,11 +499,12 @@ function Borrows() {
                 </tr>
               </thead>
               <tbody>
-                {borrows.map((borrow) => (
+                {visibleBorrows.map((borrow) => (
                   <tr key={borrow.id}>
                     <td>#{borrow.id}</td>
                     <td>{borrow.full_name}</td>
                     <td>{borrow.item_name}</td>
+                    <td>{borrow.category || '-'}</td>
                     <td>{borrow.item_count}</td>
                     <td>{new Date(borrow.borrow_date).toLocaleDateString()}</td>
                     <td>{new Date(borrow.return_date_expected).toLocaleDateString()}</td>
