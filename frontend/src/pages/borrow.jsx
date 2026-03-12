@@ -14,6 +14,9 @@ function Borrows() {
   const [batchRequests, setBatchRequests] = useState([]);
   const [adminBatches, setAdminBatches] = useState([]);
   const [expandedRequests, setExpandedRequests] = useState({});
+  const [queueNotices, setQueueNotices] = useState([]);
+
+  const POLL_INTERVAL_MS = 30000;
 
   useEffect(() => {
     loadBorrows();
@@ -29,6 +32,69 @@ function Borrows() {
       return () => clearTimeout(timer);
     }
   }, [isPrinting, isPrintReady]);
+
+  useEffect(() => {
+    if (isAdminOrPetugas()) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      loadBorrows();
+    }, POLL_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [isAdminOrPetugas]);
+
+  const safeParse = (value) => {
+    if (!value) return null;
+    try {
+      const parsed = JSON.parse(value);
+      if (parsed && typeof parsed === 'object') {
+        return parsed;
+      }
+      return null;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const notifyQueuedPromotion = (rows) => {
+    if (!user?.id) {
+      return;
+    }
+
+    const cacheKey = `borrow_status_cache_${user.id}`;
+    const previous = safeParse(localStorage.getItem(cacheKey)) || {};
+    const current = {};
+
+    rows.forEach((row) => {
+      if (row && row.id != null) {
+        current[row.id] = row.status;
+      }
+    });
+
+    const hadPrevious = Object.keys(previous).length > 0;
+    if (hadPrevious) {
+      const promoted = rows.filter(
+        (row) => row.status === 'pending' && previous[row.id] === 'queued'
+      );
+      if (promoted.length > 0) {
+        setQueueNotices(
+          promoted.map((row) => ({
+            id: row.id,
+            item_name: row.item_name,
+            request_id: row.request_id,
+          }))
+        );
+      } else {
+        setQueueNotices([]);
+      }
+    } else {
+      setQueueNotices([]);
+    }
+
+    localStorage.setItem(cacheKey, JSON.stringify(current));
+  };
 
   const loadBorrows = async () => {
     try {
@@ -47,8 +113,10 @@ function Borrows() {
         setAdminBatches(sortBatchesByDate(batchRes.data || []));
       } else {
         const [myRes, requestRes] = await Promise.all([borrowAPI.getMy(), borrowAPI.getRequests()]);
-        setBorrows(myRes.data || []);
+        const myRows = myRes.data || [];
+        setBorrows(myRows);
         setBatchRequests(sortBatchesByDate(requestRes.data || []));
+        notifyQueuedPromotion(myRows);
       }
     } catch (error) {
       console.error('Failed to load borrows:', error);
@@ -221,6 +289,10 @@ function Borrows() {
     return `Rp ${fine.toLocaleString('id-ID')} (${late} hari)`;
   };
 
+  const queueNoticeText = queueNotices
+    .map((notice) => `${notice.item_name} (#${notice.id})`)
+    .join(', ');
+
   return (
     <div>
       <div className="card no-print">
@@ -283,6 +355,12 @@ function Borrows() {
 
       {!isAdminOrPetugas() && (
         <div className="card no-print">
+          {queueNotices.length > 0 && (
+            <div className="alert alert-success">
+              Stok tersedia untuk: {queueNoticeText}. Status sekarang pending dan menunggu persetujuan
+              petugas.
+            </div>
+          )}
           <div className="flex justify-between items-center mb-2">
             <div>
               <h2 className="card-header">Riwayat Batch Peminjaman</h2>

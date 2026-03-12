@@ -41,7 +41,7 @@ function Items() {
 
   const loadItems = async () => {
     try {
-      const res = isShopMode ? await itemAPI.getAvailable() : await itemAPI.getAll();
+      const res = await itemAPI.getAll();
       console.log('Items response:', res);
       const data = res.data || res;
       setItems(Array.isArray(data) ? data : []);
@@ -58,12 +58,19 @@ function Items() {
     return value < 1 ? 1 : value;
   };
 
-  const clampQty = (value, available) => {
+  const clampQty = (value, maxStock) => {
     let next = Math.max(1, Number(value) || 1);
-    if (Number.isFinite(available) && available > 0) {
-      next = Math.min(next, available);
+    if (Number.isFinite(maxStock) && maxStock > 0) {
+      next = Math.min(next, maxStock);
     }
     return next;
+  };
+
+  const getMaxStock = (item) => {
+    const total = Number(item.total) || 0;
+    if (total > 0) return total;
+    const available = Number(item.available) || 0;
+    return available > 0 ? available : 0;
   };
 
   const updateDraftQty = (itemId, value) => {
@@ -71,23 +78,24 @@ function Items() {
   };
 
   const adjustDraftQty = (item, delta) => {
-    const available = Number(item.available) || 0;
+    const maxStock = getMaxStock(item);
     const current = getDraftQty(item.id);
-    const next = clampQty(current + delta, available);
+    const next = clampQty(current + delta, maxStock);
     updateDraftQty(item.id, next);
   };
 
   const handleAddToCart = (item) => {
     const available = Number(item.available) || 0;
-    const qty = clampQty(getDraftQty(item.id), available);
+    const maxStock = getMaxStock(item);
+    const qty = clampQty(getDraftQty(item.id), maxStock);
 
-    if (available <= 0) {
-      alert('Item is out of stock');
+    if (maxStock <= 0) {
+      alert('Item is not available');
       return;
     }
 
-    if (qty > available) {
-      alert(`Maximum available stock is ${available}`);
+    if (qty > maxStock) {
+      alert(`Maximum allowed quantity is ${maxStock}`);
       return;
     }
 
@@ -96,6 +104,7 @@ function Items() {
         id: item.id,
         item_name: item.item_name,
         available,
+        maxStock,
       },
       qty
     );
@@ -244,9 +253,11 @@ function Items() {
           <div className="shop-grid">
             {items.map((item) => {
               const available = Number(item.available) || 0;
+              const maxStock = getMaxStock(item);
               const cartQty = cartLookup.get(item.id) || 0;
               const conditionBadge =
                 item.item_condition === 'normal' ? 'badge-approved' : 'badge-warning';
+              const isPreorder = maxStock > 0 && available < getDraftQty(item.id);
               return (
                 <div className="card shop-card" key={item.id}>
                   <div className="shop-card-header">
@@ -276,28 +287,33 @@ function Items() {
                         type="number"
                         className="form-input shop-qty-input qty-input"
                         min="1"
-                        max={available > 0 ? available : undefined}
+                        max={maxStock > 0 ? maxStock : undefined}
                         value={getDraftQty(item.id)}
-                        onChange={(e) => updateDraftQty(item.id, clampQty(e.target.value, available))}
+                        onChange={(e) => updateDraftQty(item.id, clampQty(e.target.value, maxStock))}
                       />
                       <button
                         type="button"
                         className="qty-btn"
                         onClick={() => adjustDraftQty(item, 1)}
-                        disabled={available <= 0 || getDraftQty(item.id) >= available}
+                        disabled={maxStock <= 0 || getDraftQty(item.id) >= maxStock}
                       >
                         +
                       </button>
                     </div>
                     <button
                       type="button"
-                      className="btn btn-primary"
-                      disabled={available <= 0}
+                      className={`btn ${isPreorder ? 'btn-secondary' : 'btn-primary'}`}
+                      disabled={maxStock <= 0}
                       onClick={() => handleAddToCart(item)}
                     >
-                      Add to Cart
+                      {isPreorder ? 'Pre-Order Borrow' : 'Add to Cart'}
                     </button>
                   </div>
+                  {isPreorder && (
+                    <p className="shop-card-cart">
+                      Quantity exceeds available stock. This request will be queued.
+                    </p>
+                  )}
                   {cartQty > 0 && (
                     <p className="shop-card-cart">
                       In cart: <strong>{cartQty}</strong>

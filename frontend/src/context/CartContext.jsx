@@ -41,19 +41,24 @@ export const CartProvider = ({ children }) => {
 
   const addItem = (item, quantity = 1) => {
     const normalizedQty = Math.max(1, Number(quantity) || 1);
-    const available = Number.isFinite(Number(item.available)) ? Number(item.available) : null;
+    const rawMaxStock = Number(item.maxStock);
+    const maxStock = Number.isFinite(rawMaxStock) && rawMaxStock > 0
+      ? rawMaxStock
+      : Number.isFinite(Number(item.available)) && Number(item.available) > 0
+      ? Number(item.available)
+      : null;
 
     setItems((prev) => {
       const existing = prev.find((entry) => entry.id === item.id);
       if (existing) {
         const nextQty = existing.quantity + normalizedQty;
-        const finalQty = available ? Math.min(nextQty, available) : nextQty;
+        const finalQty = maxStock ? Math.min(nextQty, maxStock) : nextQty;
         return prev.map((entry) =>
           entry.id === item.id ? { ...entry, quantity: finalQty } : entry
         );
       }
 
-      const finalQty = available ? Math.min(normalizedQty, available) : normalizedQty;
+      const finalQty = maxStock ? Math.min(normalizedQty, maxStock) : normalizedQty;
       return [
         ...prev,
         {

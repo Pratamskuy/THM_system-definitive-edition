@@ -13,65 +13,85 @@ const INITIAL_FORM_STATE = {
 function Cart() {
   const { isPeminjam } = useAuth();
   const { items, updateQuantity, removeItem, clearCart, totalItems, totalQuantity } = useCart();
-  const [availableItems, setAvailableItems] = useState([]);
+  const [inventoryItems, setInventoryItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(INITIAL_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    loadAvailableItems();
+    loadInventory();
   }, []);
 
-  const loadAvailableItems = async () => {
+  const loadInventory = async () => {
     try {
-      const res = await itemAPI.getAvailable();
-      setAvailableItems(res.data || []);
+      const res = await itemAPI.getAll();
+      setInventoryItems(res.data || []);
     } catch (error) {
-      console.error('Failed to load available items:', error);
+      console.error('Failed to load item inventory:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const availableMap = useMemo(() => {
+  const inventoryMap = useMemo(() => {
     const map = new Map();
-    availableItems.forEach((item) => {
-      map.set(item.id, Number(item.available) || 0);
+    inventoryItems.forEach((item) => {
+      map.set(item.id, {
+        available: Number(item.available) || 0,
+        total: Number(item.total) || 0,
+      });
     });
     return map;
-  }, [availableItems]);
+  }, [inventoryItems]);
 
   const cartRows = useMemo(
     () =>
-      items.map((entry) => ({
-        ...entry,
-        available: availableMap.has(entry.id) ? availableMap.get(entry.id) : 0,
-      })),
-    [items, availableMap]
+      items.map((entry) => {
+        const inventory = inventoryMap.get(entry.id);
+        return {
+          ...entry,
+          available: inventory ? inventory.available : 0,
+          total: inventory ? inventory.total : 0,
+        };
+      }),
+    [items, inventoryMap]
   );
 
-  const hasInvalidQty = cartRows.some((entry) => entry.quantity > entry.available);
+  const getMaxStock = (entry) => {
+    const total = Number(entry.total) || 0;
+    if (total > 0) return total;
+    const available = Number(entry.available) || 0;
+    return available > 0 ? available : 0;
+  };
+
+  const hasInvalidQty = cartRows.some((entry) => {
+    const maxStock = getMaxStock(entry);
+    return maxStock <= 0 || entry.quantity > maxStock;
+  });
+  const hasPreorder = cartRows.some(
+    (entry) => (Number(entry.available) || 0) < (Number(entry.quantity) || 0)
+  );
   const exceedsMaxItems = cartRows.length > MAX_ITEMS_PER_REQUEST;
 
   const updateForm = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const clampQty = (value, available) => {
+  const clampQty = (value, maxStock) => {
     let next = Math.max(1, Number(value) || 1);
-    if (Number.isFinite(available) && available > 0) {
-      next = Math.min(next, available);
+    if (Number.isFinite(maxStock) && maxStock > 0) {
+      next = Math.min(next, maxStock);
     }
     return next;
   };
 
   const handleQuantityChange = (entry, value) => {
-    const nextQty = clampQty(value, entry.available);
+    const nextQty = clampQty(value, getMaxStock(entry));
     updateQuantity(entry.id, nextQty);
   };
 
   const adjustQuantity = (entry, delta) => {
-    const nextQty = clampQty(entry.quantity + delta, entry.available);
+    const nextQty = clampQty(entry.quantity + delta, getMaxStock(entry));
     updateQuantity(entry.id, nextQty);
   };
 
@@ -99,7 +119,7 @@ function Cart() {
     }
 
     if (hasInvalidQty) {
-      alert('Some items exceed available stock. Please adjust the quantities.');
+      alert('Some items exceed the maximum allowed quantity or are unavailable.');
       return;
     }
 
@@ -184,17 +204,27 @@ function Cart() {
             <h2 className="card-header">Items in Cart</h2>
             <div className="cart-list">
               {cartRows.map((entry) => {
+                const maxStock = getMaxStock(entry);
                 const outOfStock = entry.available <= 0;
                 const exceedsStock = entry.quantity > entry.available;
+                const isUnavailable = maxStock <= 0;
                 return (
                   <div className="cart-item" key={entry.id}>
                     <div className="cart-item-info">
                       <h3 className="text-clamp-1">{entry.item_name}</h3>
                       <p className="cart-item-meta">
                         Available: {entry.available}
-                        {outOfStock && <span className="cart-item-warning"> Out of stock</span>}
-                        {!outOfStock && exceedsStock && (
-                          <span className="cart-item-warning"> Quantity exceeds stock</span>
+                        {Number.isFinite(Number(entry.total)) && entry.total > 0 && (
+                          <span> / Total: {entry.total}</span>
+                        )}
+                        {isUnavailable && (
+                          <span className="cart-item-warning"> Item unavailable</span>
+                        )}
+                        {!isUnavailable && outOfStock && (
+                          <span className="cart-item-warning"> Out of stock (queued)</span>
+                        )}
+                        {!isUnavailable && !outOfStock && exceedsStock && (
+                          <span className="cart-item-warning"> Quantity exceeds stock (queued)</span>
                         )}
                       </p>
                     </div>
@@ -213,14 +243,14 @@ function Cart() {
                           className="form-input cart-qty-input qty-input"
                           value={entry.quantity}
                           min="1"
-                          max={entry.available > 0 ? entry.available : undefined}
+                          max={maxStock > 0 ? maxStock : undefined}
                           onChange={(e) => handleQuantityChange(entry, e.target.value)}
                         />
                         <button
                           type="button"
                           className="qty-btn"
                           onClick={() => adjustQuantity(entry, 1)}
-                          disabled={entry.available <= 0 || entry.quantity >= entry.available}
+                          disabled={isUnavailable || (maxStock > 0 && entry.quantity >= maxStock)}
                         >
                           +
                         </button>
@@ -276,7 +306,12 @@ function Cart() {
             )}
             {hasInvalidQty && (
               <div className="alert alert-warning">
-                Some items exceed available stock. Please adjust before submitting.
+                Some items exceed the maximum allowed quantity or are unavailable.
+              </div>
+            )}
+            {!hasInvalidQty && hasPreorder && (
+              <div className="alert alert-info">
+                Some items will be queued as pre-order because stock is not enough.
               </div>
             )}
             <button
@@ -285,7 +320,11 @@ function Cart() {
               onClick={handleSubmit}
               disabled={isSubmitting || hasInvalidQty || exceedsMaxItems}
             >
-              {isSubmitting ? 'Submitting...' : 'Submit Borrow Request'}
+              {isSubmitting
+                ? 'Submitting...'
+                : hasPreorder
+                ? 'Submit Pre-Order Request'
+                : 'Submit Borrow Request'}
             </button>
             <button type="button" className="btn btn-secondary" onClick={clearCart} disabled={isSubmitting}>
               Clear Cart
