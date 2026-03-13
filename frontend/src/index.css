@@ -923,7 +923,7 @@ body {
 }
 
 .table-row-details td {
-  background: #f8fafc;
+  background: var(--card-bg);
 }
 
 /* Badges */
