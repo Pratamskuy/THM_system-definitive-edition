@@ -1,4 +1,5 @@
 const db = require('../db');
+const { sendBorrowStatusNotification } = require('../services/emailService');
 
 const MAX_ITEMS_PER_REQUEST = 20;
 
@@ -210,10 +211,12 @@ const processQueuedForItemOnConnection = (connection, itemId, callback) => {
         }
 
         const queueLockQuery = `
-            SELECT id, request_id, item_count
-            FROM borrow_data
-            WHERE id_items = ? AND status = 'queued'
-            ORDER BY borrow_date ASC, id ASC
+            SELECT bd.id, bd.request_id, bd.item_count, u.email, COALESCE(u.full_name, u.name) AS user_name, i.item_name
+            FROM borrow_data bd
+            JOIN user_data u ON bd.id_user = u.id
+            JOIN items i ON bd.id_items = i.id
+            WHERE bd.id_items = ? AND bd.status = 'queued'
+            ORDER BY bd.borrow_date ASC, bd.id ASC
             FOR UPDATE
         `;
 
@@ -344,6 +347,10 @@ const processQueuedForItemOnConnection = (connection, itemId, callback) => {
                         if (target.request_id) {
                             promotedRequestIds.add(target.request_id);
                         }
+
+                        // Send email notification asynchronously (don't block transaction)
+                        sendBorrowStatusNotification(target.email, target.user_name, target.item_name, 'Pending')
+                            .catch(emailErr => console.error('Failed to send email notification:', emailErr));
                     }
 
                     promoteNext(null);

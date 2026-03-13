@@ -1,10 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { useTheme } from '../context/ThemeContext';
 
 function Navbar() {
   const { user, logout, isAdmin, isPeminjam } = useAuth();
   const { totalQuantity } = useCart();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const displayName = user?.full_name || user?.name || 'User';
   const email = user?.email || '-';
@@ -66,6 +68,11 @@ function Navbar() {
               </li>
             </>
           )}
+          <li>
+            <button onClick={toggleTheme} className="btn btn-sm btn-secondary theme-toggle">
+              {theme === 'light' ? '🌙' : '☀️'}
+            </button>
+          </li>
           <li>
             <div className="navbar-user-container" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem',  }}>
               <div className="account-chip">

@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/navbar';
 import Login from './pages/login';
 import Register from './pages/register';
@@ -152,13 +153,15 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <div className="app-container">
-          <AppRoutes />
-        </div>
-      </CartProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <CartProvider>
+          <div className="app-container">
+            <AppRoutes />
+          </div>
+        </CartProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

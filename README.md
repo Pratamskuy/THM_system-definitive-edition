@@ -239,3 +239,19 @@ Default API frontend mengarah ke: `http://localhost:3000/api`
 - Export laporan (PDF/Excel).
 - Notifikasi email/WhatsApp untuk status transaksi.
 - Peningkatan observability (structured log + monitoring).
+
+## notes
+
+1. Note: For Gmail, you'll need to:
+
+   Enable 2-factor authentication
+   Generate an "App Password" in Google Account settings
+   Use the app password (not your regular password) in EMAIL_PASS
+   How It Works
+   When items are returned and stock becomes available, the system automatically:
+
+   Moves queued borrow requests to "pending" status
+   Sends an email notification to the user with details about their item
+   The email includes the user's name, item name, and new status.
+
+   Both features are now active across your entire website! The dark mode toggle is in the navbar, and email notifications will be sent automatically when borrow statuses change from queued to pending.
