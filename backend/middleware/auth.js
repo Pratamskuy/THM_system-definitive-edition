@@ -30,7 +30,6 @@ const authJWt = (req, res, next)=>{
 
     if (token){
         const auth = token.split(" ")[1]
-        console.log(auth);
 
         jwt.verify(auth, secretKey, (err, user)=>{
             if (err) {

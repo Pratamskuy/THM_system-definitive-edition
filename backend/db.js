@@ -353,7 +353,7 @@ const initDatabase = () => {
                     if (tableErr) {
                         console.error('Gagal inisialisasi tabel:', tableErr.message);
                     } else {
-                        console.log('Database siap digunakan.');
+                        // Database siap digunakan.
                     }
 
                     tempConnection.end();

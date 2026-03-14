@@ -11,7 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors({
-    origin: ["http://localhost:5173", "http://localhost:5174"],
+    origin: ["http://localhost:5173"],
     credentials: true
 }));
 
@@ -57,7 +57,7 @@ app.listen(PORT, () => {
 
             const expiredCount = result?.expiredCount || 0;
             if (expiredCount > 0) {
-                console.log(`${expiredCount} peminjaman pending kedaluwarsa otomatis`);
+                // ${expiredCount} peminjaman pending kedaluwarsa otomatis
             }
         });
     };
