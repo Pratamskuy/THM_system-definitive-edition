@@ -214,7 +214,7 @@ node index.js
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run thm
 ```
 
 Default API frontend mengarah ke: `http://localhost:3000/api`
