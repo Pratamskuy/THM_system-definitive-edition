@@ -248,56 +248,6 @@ function Borrows() {
     });
   };
 
-  if (loading) {
-    return (
-      <div className="loading">
-        <div className="spinner"></div>
-      </div>
-    );
-  }
-
-  const formatDate = (dateValue) => {
-    if (!dateValue) return '-';
-    return new Date(dateValue).toLocaleDateString('id-ID');
-  };
-
-  const getOverdueDays = (expectedDate, actualReturnDate) => {
-    if (!expectedDate || !actualReturnDate) {
-      return 0;
-    }
-
-    const expected = new Date(expectedDate);
-    const returned = new Date(actualReturnDate);
-
-    if (Number.isNaN(expected.getTime()) || Number.isNaN(returned.getTime())) {
-      return 0;
-    }
-
-    const diffDays = Math.floor((returned - expected) / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : 0;
-  };
-
-  const formatFine = (borrow) => {
-    const baseFine = Number(borrow.fine ?? borrow.denda) || 0;
-    let late = Number(borrow.late ?? borrow.terlambat_hari) || 0;
-
-    if (late <= 0) {
-      late = getOverdueDays(borrow.return_date_expected, borrow.return_date);
-    }
-
-    const fine = baseFine > 0 ? baseFine : late > 0 ? late * 5000 : 0;
-
-    if (fine <= 0 && late <= 0) {
-      return '-';
-    }
-
-    return `Rp ${fine.toLocaleString('id-ID')} (${late} hari)`;
-  };
-
-  const queueNoticeText = queueNotices
-    .map((notice) => `${notice.item_name} (#${notice.id})`)
-    .join(', ');
-
   const visibleBorrows = useMemo(() => {
     const keyword = query.trim().toLowerCase();
     if (!keyword) return borrows;
@@ -354,6 +304,56 @@ function Borrows() {
       return haystack.includes(keyword);
     });
   }, [adminBatches, query]);
+
+  if (loading) {
+    return (
+      <div className="loading">
+        <div className="spinner"></div>
+      </div>
+    );
+  }
+
+  const formatDate = (dateValue) => {
+    if (!dateValue) return '-';
+    return new Date(dateValue).toLocaleDateString('id-ID');
+  };
+
+  const getOverdueDays = (expectedDate, actualReturnDate) => {
+    if (!expectedDate || !actualReturnDate) {
+      return 0;
+    }
+
+    const expected = new Date(expectedDate);
+    const returned = new Date(actualReturnDate);
+
+    if (Number.isNaN(expected.getTime()) || Number.isNaN(returned.getTime())) {
+      return 0;
+    }
+
+    const diffDays = Math.floor((returned - expected) / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
+  };
+
+  const formatFine = (borrow) => {
+    const baseFine = Number(borrow.fine ?? borrow.denda) || 0;
+    let late = Number(borrow.late ?? borrow.terlambat_hari) || 0;
+
+    if (late <= 0) {
+      late = getOverdueDays(borrow.return_date_expected, borrow.return_date);
+    }
+
+    const fine = baseFine > 0 ? baseFine : late > 0 ? late * 5000 : 0;
+
+    if (fine <= 0 && late <= 0) {
+      return '-';
+    }
+
+    return `Rp ${fine.toLocaleString('id-ID')} (${late} hari)`;
+  };
+
+  const queueNoticeText = queueNotices
+    .map((notice) => `${notice.item_name} (#${notice.id})`)
+    .join(', ');
 
   return (
     <div>
@@ -636,7 +636,7 @@ function Borrows() {
                   </tr>
                 </thead>
                 <tbody>
-                  {adminBatches.map((batch) => {
+                  {visibleAdminBatches.map((batch) => {
                     const totalItems = batch.items.length;
                     const takenItems = batch.items.filter((item) => item.borrow_status === 'taken').length;
                     const pendingItems = batch.items.filter((item) => item.borrow_status === 'pending').length;
