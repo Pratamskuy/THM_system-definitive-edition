@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { userAPI } from '../services/api';
 
 function Users() {
   const [users, setUsers] = useState([]);
+  const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -20,6 +21,24 @@ function Users() {
     { id: 2, name: 'officer' },
     { id: 3, name: 'visitor' },
   ];
+
+  const filteredUsers = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+    if (!keyword) return users;
+    return users.filter((user) => {
+      const haystack = [
+        user.name,
+        user.email,
+        user.full_name,
+        user.role_name,
+        user.role_id && String(user.role_id),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(keyword);
+    });
+  }, [users, query]);
 
   useEffect(() => {
     loadUsers();
@@ -89,6 +108,15 @@ function Users() {
     <div>
       <div className="card">
         <h1 className="card-header">Users Management</h1>
+        <div className="form-group mt-2">
+          <input
+            type="text"
+            className="form-input"
+            placeholder="Cari nama, email, atau role..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
       </div>
 
       <div className="card">
@@ -112,7 +140,7 @@ function Users() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
+                {filteredUsers.map((user) => (
                   <tr key={user.id}>
                     <td>#{user.id}</td>
                     <td>{user.name}</td>

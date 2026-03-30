@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { categoryAPI } from '../services/api';
 
 function Categories() {
   const [categories, setCategories] = useState([]);
+  const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
@@ -67,6 +68,21 @@ function Categories() {
     setShowModal(true);
   };
 
+  const filteredCategories = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+    if (!keyword) return categories;
+    return categories.filter((category) => {
+      const haystack = [
+        category.categories,
+        category.description,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(keyword);
+    });
+  }, [categories, query]);
+
   const closeModal = () => {
     setShowModal(false);
     setEditingCategory(null);
@@ -89,6 +105,15 @@ function Categories() {
             + Add Category
           </button>
         </div>
+        <div className="form-group mt-2">
+          <input
+            type="text"
+            className="form-input"
+            placeholder="Cari kategori atau deskripsi..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
       </div>
 
       <div className="card">
@@ -110,7 +135,7 @@ function Categories() {
                 </tr>
               </thead>
               <tbody>
-                {categories.map((category) => (
+                {filteredCategories.map((category) => (
                   <tr key={category.id}>
                     <td>#{category.id}</td>
                     <td>{category.categories}</td>

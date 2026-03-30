@@ -10,6 +10,7 @@ function Items() {
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -37,7 +38,7 @@ function Items() {
     let filtered = items;
 
     if (categoryFilter !== 'all') {
-      filtered = items.filter((item) => {
+      filtered = filtered.filter((item) => {
         const itemCategoryId = String(item.categories_id || item.category_id || '');
         const itemCategoryName = String(item.categories || '').toLowerCase();
         const filterValue = String(categoryFilter).toLowerCase();
@@ -46,8 +47,24 @@ function Items() {
       });
     }
 
+    const keyword = query.trim().toLowerCase();
+    if (keyword) {
+      filtered = filtered.filter((item) => {
+        const haystack = [
+          item.item_name,
+          item.description,
+          item.categories,
+          item.item_condition,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return haystack.includes(keyword);
+      });
+    }
+
     return filtered;
-  }, [items, categoryFilter]);
+  }, [items, categoryFilter, query]);
 
   useEffect(() => {
     loadItems();
@@ -251,7 +268,15 @@ function Items() {
               <h1 className="card-header">Borrow Items</h1>
               <p className="card-body">Select items and add them to your cart before borrowing.</p>
             </div>
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Cari item..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                style={{ minWidth: '160px', width: '100%', maxWidth: '280px' }}
+              />
               <select
                 className="form-input"
                 value={categoryFilter}
@@ -381,7 +406,15 @@ function Items() {
       </div>
 
       <div className="card">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="Cari item..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            style={{ minWidth: '160px', width: '100%', maxWidth: '280px' }}
+          />
             {isAdmin() && (
               <select
                 className="form-input"

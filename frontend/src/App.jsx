@@ -37,6 +37,11 @@ function ProtectedRoute({ children, adminOnly = false }) {
   return (
     <>
       <Navbar />
+      <div className="mobile-marquee" aria-live="polite">
+        <div className="marquee-text">
+          Selamat datang, {user?.full_name || user?.name || 'User'}! {user?.role_name || 'User'}.
+        </div>
+      </div>
       <div className="main-content">{children}</div>
     </>
   );

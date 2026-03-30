@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { borrowAPI, returnAPI, categoryAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +8,7 @@ function Borrows() {
   const [borrows, setBorrows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [query, setQuery] = useState('');
   const [isPrintReady, setIsPrintReady] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [activeTab, setActiveTab] = useState('table');
@@ -297,7 +298,62 @@ function Borrows() {
     .map((notice) => `${notice.item_name} (#${notice.id})`)
     .join(', ');
 
-  const visibleBorrows = borrows;
+  const visibleBorrows = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+    if (!keyword) return borrows;
+
+    return borrows.filter((borrow) => {
+      const haystack = [
+        borrow.id && String(borrow.id),
+        borrow.full_name,
+        borrow.nama_peminjam,
+        borrow.item_name,
+        borrow.category,
+        borrow.status,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return haystack.includes(keyword);
+    });
+  }, [borrows, query]);
+
+  const visibleBatchRequests = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+    if (!keyword) return batchRequests;
+
+    return batchRequests.filter((request) => {
+      const haystack = [
+        request.request_id && String(request.request_id),
+        request.request_status,
+        request.borrower,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return haystack.includes(keyword);
+    });
+  }, [batchRequests, query]);
+
+  const visibleAdminBatches = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+    if (!keyword) return adminBatches;
+
+    return adminBatches.filter((batch) => {
+      const haystack = [
+        batch.request_id && String(batch.request_id),
+        batch.borrower,
+        batch.request_status,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return haystack.includes(keyword);
+    });
+  }, [adminBatches, query]);
 
   return (
     <div>
@@ -307,6 +363,16 @@ function Borrows() {
             {isAdminOrPetugas() ? 'Borrow Requests Management' : 'My Borrows'}
           </h1>
           {!isAdminOrPetugas() && <div className="borrow-batch-badge">Cart Borrowing</div>}
+        </div>
+
+        <div className="form-group mt-3">
+          <input
+            type="text"
+            className="form-input"
+            placeholder="Cari borrow berdasarkan nama, item, atau status..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
         </div>
 
         {isAdminOrPetugas() && (
@@ -384,7 +450,7 @@ function Borrows() {
             </div>
           </div>
 
-          {batchRequests.length === 0 ? (
+          {visibleBatchRequests.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon">[]</div>
               <p>No batch requests found</p>
@@ -403,7 +469,7 @@ function Borrows() {
                   </tr>
                 </thead>
                 <tbody>
-                  {batchRequests.map((request) => {
+                  {visibleBatchRequests.map((request) => {
                     const items = request.items || [];
                     const totalItems = items.length;
                     const takenItems = items.filter((i) => i.borrow_status === 'taken').length;
@@ -476,7 +542,7 @@ function Borrows() {
 
       {isAdminOrPetugas() && activeTab === 'table' && (
         <div className="card no-print">
-          {borrows.length === 0 ? (
+          {visibleBorrows.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon">[]</div>
               <p>No borrow requests found</p>
@@ -550,7 +616,7 @@ function Borrows() {
 
       {isAdminOrPetugas() && activeTab === 'batch' && (
         <div className="card no-print">
-          {adminBatches.length === 0 ? (
+          {visibleAdminBatches.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon">[]</div>
               <p>No batch requests found</p>

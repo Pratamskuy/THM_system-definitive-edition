@@ -121,7 +121,7 @@ function Dashboard() {
 
   return (
     <div>
-      <div className="card">
+      <div className="card dashboard-welcome-card">
         <h1>Welcome, {user?.full_name || user?.name}!</h1>
         <p style={{ color: 'var(--text-secondary)' }}>
           {user?.role_name || 'User'} Dashboard
