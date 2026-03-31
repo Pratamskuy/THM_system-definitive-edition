@@ -39,7 +39,7 @@ function ProtectedRoute({ children, adminOnly = false }) {
       <Navbar />
       <div className="mobile-marquee" aria-live="polite">
         <div className="marquee-text">
-          Selamat datang, {user?.full_name || user?.name || 'User'}! {user?.role_name || 'User'}.
+          Welcome, {user?.full_name || user?.name || 'User'}!. You're logged in as "{isAdmin() ? 'Admin' : 'Peminjam'}".
         </div>
       </div>
       <div className="main-content">{children}</div>
