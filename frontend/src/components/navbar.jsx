@@ -109,6 +109,7 @@ function Navbar() {
                 <div className="account-tooltip">
                   <strong>{displayName}</strong>
                   <span>{email}</span>
+                  <span>{user?.role_name || 'User'}</span>
                 </div>
               </div>
               <button onClick={handleLogout} className="btn btn-sm btn-danger">
