@@ -348,7 +348,7 @@ function Borrows() {
       return '-';
     }
 
-    return `Rp ${fine.toLocaleString('id-ID')} (${late} hari)`;
+    return `Rp ${fine.toLocaleString('id-ID')} (${late}d)`;
   };
 
   const queueNoticeText = queueNotices
