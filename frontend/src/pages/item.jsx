@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { itemAPI, categoryAPI } from '../services/api';
+import { showError, showSuccess, showWarning, showConfirm } from '../services/swalService';
 
 function Items() {
   const { isAdmin, isPeminjam } = useAuth();
@@ -79,7 +80,7 @@ function Items() {
       setItems(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to load items:', error);
-      alert('Gagal memuat data item: ' + error.message);
+      showError('Gagal memuat data item: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -122,12 +123,12 @@ function Items() {
     const qty = clampQty(getDraftQty(item.id), maxStock);
 
     if (maxStock <= 0) {
-      alert('Item is not available');
+      showWarning('Item is not available');
       return;
     }
 
     if (qty > maxStock) {
-      alert(`Maximum allowed quantity is ${maxStock}`);
+      showWarning(`Maximum allowed quantity is ${maxStock}`);
       return;
     }
 
@@ -158,24 +159,24 @@ function Items() {
     
     // Validation
     if (!formData.item_name || formData.item_name.trim() === '') {
-      alert('Nama item wajib diisi!');
+      showWarning('Nama item wajib diisi!');
       return;
     }
     
     if (!formData.total || formData.total < 0) {
-      alert('Jumlah total harus diisi dan tidak boleh minus!');
+      showWarning('Jumlah total harus diisi dan tidak boleh minus!');
       return;
     }
 
     // ADDED: Validation untuk available
     if (formData.available === '' || formData.available < 0) {
-      alert('Jumlah tersedia harus diisi dan tidak boleh minus!');
+      showWarning('Jumlah tersedia harus diisi dan tidak boleh minus!');
       return;
     }
 
     // ADDED: Validation available tidak boleh lebih dari total
     if (parseInt(formData.available) > parseInt(formData.total)) {
-      alert('Jumlah tersedia tidak boleh lebih dari jumlah total!');
+      showWarning('Jumlah tersedia tidak boleh lebih dari jumlah total!');
       return;
     }
 
@@ -184,29 +185,36 @@ function Items() {
       
       if (editingItem) {
         await itemAPI.update(editingItem.id, formData);
-        alert('Item berhasil diupdate!');
+        showSuccess('Item berhasil diupdate!');
       } else {
         await itemAPI.create(formData);
-        alert('Item berhasil dibuat!');
+        showSuccess('Item berhasil dibuat!');
       }
       loadItems();
       closeModal();
     } catch (error) {
       console.error('Submit error:', error);
-      alert('Gagal menyimpan item: ' + error.message);
+      showError('Gagal menyimpan item: ' + error.message);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus item ini?')) {
-      try {
-        await itemAPI.delete(id);
-        alert('Item berhasil dihapus!');
-        loadItems();
-      } catch (error) {
-        console.error('Delete error:', error);
-        alert('Gagal menghapus item: ' + error.message);
-      }
+    const confirmed = await showConfirm({
+      title: 'Hapus Item',
+      text: 'Apakah Anda yakin ingin menghapus item ini?',
+      confirmButtonText: 'Ya, hapus',
+      cancelButtonText: 'Batal',
+      icon: 'warning',
+    });
+    if (!confirmed) return;
+
+    try {
+      await itemAPI.delete(id);
+      showSuccess('Item berhasil dihapus!');
+      loadItems();
+    } catch (error) {
+      console.error('Delete error:', error);
+      showError('Gagal menghapus item: ' + error.message);
     }
   };
 

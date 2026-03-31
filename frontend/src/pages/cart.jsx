@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { borrowAPI, itemAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { showSuccess, showError, showWarning } from '../services/swalService';
 
 const MAX_ITEMS_PER_REQUEST = 20;
 const INITIAL_FORM_STATE = {
@@ -104,22 +105,22 @@ function Cart() {
 
   const handleSubmit = async () => {
     if (cartRows.length === 0) {
-      alert('Cart is empty');
+      showWarning('Cart is empty');
       return;
     }
 
     if (!form.return_date_expected) {
-      alert('Expected return date is required');
+      showWarning('Expected return date is required');
       return;
     }
 
     if (exceedsMaxItems) {
-      alert(`Maximum ${MAX_ITEMS_PER_REQUEST} items per request`);
+      showWarning(`Maximum ${MAX_ITEMS_PER_REQUEST} items per request`);
       return;
     }
 
     if (hasInvalidQty) {
-      alert('Some items exceed the maximum allowed quantity or are unavailable.');
+      showWarning('Some items exceed the maximum allowed quantity or are unavailable.');
       return;
     }
 
@@ -142,12 +143,12 @@ function Cart() {
       setForm(INITIAL_FORM_STATE);
 
       const requestId = response?.data?.request_id;
-      alert(
+      showSuccess(
         response?.message ||
           `Borrow request submitted successfully${requestId ? ` (Request #${requestId})` : ''}!`
       );
     } catch (error) {
-      alert(error.message);
+      showError(error.message);
     } finally {
       setIsSubmitting(false);
     }

@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { borrowAPI, returnAPI, categoryAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { showSuccess, showError, showConfirm, showPrompt } from '../services/swalService';
 
 function Borrows() {
   const { isAdminOrPetugas, user } = useAuth();
@@ -132,60 +133,95 @@ function Borrows() {
 
 
   const handleApprove = async (id) => {
+    const confirmed = await showConfirm({
+      title: 'Approve Request',
+      text: 'Approve this borrow request?',
+      confirmButtonText: 'Yes, approve',
+      cancelButtonText: 'Cancel',
+      icon: 'question',
+    });
+    if (!confirmed) return;
+
     try {
       await borrowAPI.approve(id);
       loadBorrows();
-      alert('Borrow request approved!');
+      showSuccess('Borrow request approved!');
     } catch (error) {
-      alert(error.message);
+      showError(error.message);
     }
   };
 
   const handleReject = async (id) => {
-    const notes = prompt('Reason for rejection:');
-    if (notes) {
-      try {
-        await borrowAPI.reject(id, notes);
-        loadBorrows();
-        alert('Borrow request rejected!');
-      } catch (error) {
-        alert(error.message);
-      }
+    const notes = await showPrompt({
+      title: 'Reject Request',
+      text: 'Reason for rejection:',
+      inputLabel: 'Rejection reason',
+      inputPlaceholder: 'Type a reason',
+    });
+    if (!notes) return;
+
+    try {
+      await borrowAPI.reject(id, notes);
+      loadBorrows();
+      showSuccess('Borrow request rejected!');
+    } catch (error) {
+      showError(error.message);
     }
   };
 
   const handleApproveBatch = async (requestId) => {
-    if (!window.confirm(`Approve batch request #${requestId}?`)) return;
+    const confirmed = await showConfirm({
+      title: 'Approve Batch',
+      text: `Approve batch request #${requestId}?`,
+      confirmButtonText: 'Yes, approve',
+      cancelButtonText: 'Cancel',
+      icon: 'question',
+    });
+    if (!confirmed) return;
 
     try {
       await borrowAPI.approveBatch(requestId);
       await loadBorrows();
-      alert(`Batch request #${requestId} approved successfully!`);
+      showSuccess(`Batch request #${requestId} approved successfully!`);
     } catch (error) {
-      alert(error.message);
+      showError(error.message);
     }
   };
 
   const handleRequestReturnBatch = async (requestId) => {
-    if (window.confirm('Request to return this batch of borrows?')) {
-      try {
-        await borrowAPI.requestReturnBatch(requestId);
-        await loadBorrows();
-        alert('Batch return request submitted successfully!');
-      } catch (error) {
-        alert(error.message);
-      }
+    const confirmed = await showConfirm({
+      title: 'Request Return',
+      text: 'Request to return this batch of borrows?',
+      confirmButtonText: 'Yes, request',
+      cancelButtonText: 'Cancel',
+      icon: 'question',
+    });
+    if (!confirmed) return;
+
+    try {
+      await borrowAPI.requestReturnBatch(requestId);
+      await loadBorrows();
+      showSuccess('Batch return request submitted successfully!');
+    } catch (error) {
+      showError(error.message);
     }
   };
 
   const handleConfirmReturnBatchAdmin = async (batch) => {
     const waitingItems = (batch.items || []).filter((item) => item.borrow_status === 'waiting for return');
     if (waitingItems.length === 0) {
-      alert('No return requests in this batch.');
+      showWarning('No return requests in this batch.');
       return;
     }
 
-    if (!window.confirm(`Confirm return for ${waitingItems.length} item(s) in batch #${batch.request_id}?`)) {
+    const confirmed = await showConfirm({
+      title: 'Confirm Returns',
+      text: `Confirm return for ${waitingItems.length} item(s) in batch #${batch.request_id}?`,
+      confirmButtonText: 'Yes, confirm',
+      cancelButtonText: 'Cancel',
+      icon: 'question',
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -199,24 +235,31 @@ function Borrows() {
       await loadBorrows();
 
       if (failedCount > 0) {
-        alert(`Confirmed ${successCount} items. ${failedCount} failed.`);
+        showWarning(`Confirmed ${successCount} items. ${failedCount} failed.`);
       } else {
-        alert(`Batch #${batch.request_id} return confirmed successfully!`);
+        showSuccess(`Batch #${batch.request_id} return confirmed successfully!`);
       }
     } catch (error) {
-      alert(error.message);
+      showError(error.message);
     }
   };
 
   const handleConfirmReturn = async (id) => {
-    if (window.confirm('Confirm return for this borrow?')) {
-      try {
-        await returnAPI.confirm(id);
-        loadBorrows();
-        alert('Return confirmed!');
-      } catch (error) {
-        alert(error.message);
-      }
+    const confirmed = await showConfirm({
+      title: 'Confirm Return',
+      text: 'Confirm return for this borrow?',
+      confirmButtonText: 'Yes, confirm',
+      cancelButtonText: 'Cancel',
+      icon: 'question',
+    });
+    if (!confirmed) return;
+
+    try {
+      await returnAPI.confirm(id);
+      loadBorrows();
+      showSuccess('Return confirmed!');
+    } catch (error) {
+      showError(error.message);
     }
   };
 
@@ -236,7 +279,7 @@ function Borrows() {
       setIsPrintReady(true);
     } catch (error) {
       setIsPrinting(false);
-      alert(error.message);
+      showError(error.message);
     }
   };
 

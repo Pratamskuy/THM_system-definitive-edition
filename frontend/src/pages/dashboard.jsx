@@ -132,40 +132,60 @@ function Dashboard() {
   };
 
   const handleApprove = async (id) => {
-    if (!window.confirm('Are you sure you want to approve this borrow request?')) return;
+    const confirmed = await showConfirm({
+      title: 'Approve Request',
+      text: 'Are you sure you want to approve this borrow request?',
+      confirmButtonText: 'Yes, approve',
+      cancelButtonText: 'Cancel',
+      icon: 'question',
+    });
+    if (!confirmed) return;
     
     try {
       await borrowAPI.approve(id);
-      alert('Borrow request approved successfully!');
+      showSuccess('Borrow request approved successfully!');
       loadDashboardData();
     } catch (error) {
       console.error('Failed to approve borrow:', error);
-      alert('Failed to approve borrow request');
+      showError('Failed to approve borrow request');
     }
   };
 
   const handleReject = async (id) => {
-    const notes = prompt('Enter rejection reason (optional):');
+    const notes = await showPrompt({
+      title: 'Reject Request',
+      text: 'Enter rejection reason (optional):',
+      inputLabel: 'Rejection reason',
+      inputPlaceholder: 'Type a reason (optional)',
+    });
+    if (notes === null) return;
     try {
       await borrowAPI.reject(id, notes);
-      alert('Borrow request rejected successfully!');
+      showSuccess('Borrow request rejected successfully!');
       loadDashboardData();
     } catch (error) {
       console.error('Failed to reject borrow:', error);
-      alert('Failed to reject borrow request');
+      showError('Failed to reject borrow request');
     }
   };
 
   const handleCancel = async (id) => {
-    if (!window.confirm('Are you sure you want to cancel this borrow request?')) return;
+    const confirmed = await showConfirm({
+      title: 'Cancel Request',
+      text: 'Are you sure you want to cancel this borrow request?',
+      confirmButtonText: 'Yes, cancel',
+      cancelButtonText: 'Keep',
+      icon: 'question',
+    });
+    if (!confirmed) return;
     
     try {
       await borrowAPI.cancel(id);
-      alert('Borrow request cancelled successfully!');
+      showSuccess('Borrow request cancelled successfully!');
       loadDashboardData();
     } catch (error) {
       console.error('Failed to cancel borrow:', error);
-      alert('Failed to cancel borrow request');
+      showError('Failed to cancel borrow request');
     }
   };
 

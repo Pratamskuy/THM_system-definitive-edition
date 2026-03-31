@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { userAPI } from '../services/api';
+import { showSuccess, showError, showConfirm } from '../services/swalService';
 
 function Users() {
   const [users, setUsers] = useState([]);
@@ -61,20 +62,27 @@ function Users() {
       await userAPI.update(editingUser.id, formData);
       loadUsers();
       closeModal();
-      alert('User updated successfully!');
+      showSuccess('User updated successfully!');
     } catch (error) {
-      alert(error.message);
+      showError(error.message);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        await userAPI.delete(id);
-        loadUsers();
-      } catch (error) {
-        alert(error.message);
-      }
+    const confirmed = await showConfirm({
+      title: 'Hapus User',
+      text: 'Are you sure you want to delete this user?',
+      confirmButtonText: 'Yes, delete',
+      cancelButtonText: 'Cancel',
+      icon: 'warning',
+    });
+    if (!confirmed) return;
+
+    try {
+      await userAPI.delete(id);
+      loadUsers();
+    } catch (error) {
+      showError(error.message);
     }
   };
 

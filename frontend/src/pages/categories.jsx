@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { categoryAPI } from '../services/api';
+import { showError, showConfirm } from '../services/swalService';
 
 function Categories() {
   const [categories, setCategories] = useState([]);
@@ -38,18 +39,25 @@ function Categories() {
       loadCategories();
       closeModal();
     } catch (error) {
-      alert(error.message);
+      showError(error.message);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this category?')) {
-      try {
-        await categoryAPI.delete(id);
-        loadCategories();
-      } catch (error) {
-        alert(error.message);
-      }
+    const confirmed = await showConfirm({
+      title: 'Hapus Kategori',
+      text: 'Are you sure you want to delete this category?',
+      confirmButtonText: 'Yes, delete',
+      cancelButtonText: 'Cancel',
+      icon: 'warning',
+    });
+    if (!confirmed) return;
+
+    try {
+      await categoryAPI.delete(id);
+      loadCategories();
+    } catch (error) {
+      showError(error.message);
     }
   };
 

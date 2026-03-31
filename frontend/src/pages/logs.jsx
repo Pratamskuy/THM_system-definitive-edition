@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { logAPI } from '../services/api';
+import { showError } from '../services/swalService';
 
 function Logs() {
   const [logs, setLogs] = useState([]);
@@ -16,7 +17,7 @@ function Logs() {
       setLogs(res.data || []);
     } catch (error) {
       console.error('Failed to load logs:', error);
-      alert('Gagal memuat log aktivitas: ' + error.message);
+      showError('Gagal memuat log aktivitas: ' + error.message);
     } finally {
       setLoading(false);
     }
