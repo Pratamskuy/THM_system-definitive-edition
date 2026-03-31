@@ -30,7 +30,7 @@ function Dashboard() {
     {
       badge: 'HOT ITEM',
       title: 'SONY A7V',
-      text: 'SONY A7V tersedia untuk project dokumenter dan acara live. Cek ketersediaan stok sebelum meminjam.',
+      text: 'SONY A7V mirrorless kamera dengan performa tinggi, ideal untuk fotografi dan videografi. Tersedia untuk dipinjam, segera hubungi admin!',
       image: 'sld(sony a7v).jpg',
     },
   ];
