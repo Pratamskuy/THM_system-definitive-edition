@@ -99,7 +99,7 @@ function Navbar() {
           )}
           <li>
             <button onClick={toggleTheme} className="btn btn-sm btn-secondary theme-toggle">
-              {theme === 'light' ? 'Dark' : 'Light'}
+              {theme === 'light' ? '☾' : '☼'}
             </button>
           </li>
           <li>

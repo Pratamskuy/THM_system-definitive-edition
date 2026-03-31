@@ -466,6 +466,158 @@ body {
   }
 }
 
+.banner-slider {
+  margin-bottom: 1.75rem;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  background: linear-gradient(135deg, #eef2ff 0%, #dbeafe 100%);
+  position: relative;
+}
+
+.banner-slide.dragging {
+  cursor: grabbing;
+}
+
+.banner-slider-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.banner-slider-arrow:hover {
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+}
+
+.banner-slider-arrow.left {
+  left: 1rem;
+}
+
+.banner-slider-arrow.right {
+  right: 1rem;
+}
+
+[data-theme="dark"] .banner-slider {
+  margin-bottom: 1.75rem;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  background: linear-gradient(135deg, #0f172a 0%, #1e40af 100%);
+}
+
+.banner-slide {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr;
+  gap: 1.5rem;
+  align-items: center;
+  padding: 1.5rem;
+  min-height: 260px;
+}
+
+.banner-slide-copy h2 {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+}
+
+.banner-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.16);
+  color: #1e40af;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.banner-slide-copy p {
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: 1rem;
+}
+
+.banner-slider-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.slider-dot {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  background: rgba(15, 23, 42, 0.1);
+  transition: background 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+}
+
+.slider-dot.active {
+  background: var(--primary-color);
+  transform: scale(1.1);
+  border-color: var(--primary-color);
+}
+
+.banner-slide-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.banner-slide-image {
+  width: 100%;
+  min-height: 180px;
+  max-height: 220px;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px dashed rgba(148, 163, 184, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0;
+  color: var(--text-secondary);
+}
+
+.banner-slide-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.banner-slide-image span {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .banner-slide {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .banner-slide-preview {
+    margin-top: 1rem;
+  }
+}
+
 .navbar-user-container {
   background-color: #f1f4ff;
   border: 1px solid var(--border-color);
@@ -647,6 +799,24 @@ body {
   font-size: 1rem;
   transition: all 0.2s;
   background: #ffffff;
+}
+
+.form-select {
+  position: relative;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: right 1rem center;
+  background-size: 0.55rem 0.55rem;
+  background-repeat: no-repeat;
+  padding-right: 2.5rem;
+}
+
+.form-select::-ms-expand {
+  display: none;
 }
 
 .form-input:focus,
@@ -1164,9 +1334,17 @@ body {
   padding: 1.6rem;
   max-width: 600px;
   width: 90%;
-  max-height: 90vh;
+  max-height: calc(100vh - 2rem);
   overflow-y: auto;
+  overflow-x: hidden;
   box-shadow: var(--shadow-lg);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.modal::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .modal-confirm {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { itemAPI, borrowAPI, userAPI } from '../services/api';
 
@@ -15,10 +15,68 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [recentBorrows, setRecentBorrows] = useState([]);
   const [myBorrows, setMyBorrows] = useState([]);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartX = useRef(null);
+  const dragDeltaX = useRef(0);
+
+  const slides = [
+    {
+      badge: 'NEW ITEM',
+      title: 'ARRI ALEXA 35',
+      text: 'ARRI ALEXA 35 dengan production kit lengkap, siap untuk produksi film Anda berikutnya. Hubungi admin untuk info peminjaman.',
+      image: 'sld(arri-alexa).jpg',
+    },
+    {
+      badge: 'HOT ITEM',
+      title: 'SONY A7V',
+      text: 'SONY A7V tersedia untuk project dokumenter dan acara live. Cek ketersediaan stok sebelum meminjam.',
+      image: 'sld(sony a7v).jpg',
+    },
+  ];
 
   useEffect(() => {
     loadDashboardData();
   }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveSlide((current) => (current + 1) % slides.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [slides.length]);
+
+  const nextSlide = () => {
+    setActiveSlide((current) => (current + 1) % slides.length);
+  };
+
+  const prevSlide = () => {
+    setActiveSlide((current) => (current - 1 + slides.length) % slides.length);
+  };
+
+  const handlePointerDown = (event) => {
+    dragStartX.current = event.clientX;
+    dragDeltaX.current = 0;
+    setIsDragging(true);
+  };
+
+  const handlePointerMove = (event) => {
+    if (!isDragging || dragStartX.current === null) return;
+    dragDeltaX.current = event.clientX - dragStartX.current;
+  };
+
+  const handlePointerEnd = () => {
+    if (!isDragging) return;
+    if (dragDeltaX.current > 80) {
+      prevSlide();
+    } else if (dragDeltaX.current < -80) {
+      nextSlide();
+    }
+    dragStartX.current = null;
+    dragDeltaX.current = 0;
+    setIsDragging(false);
+  };
 
   const loadDashboardData = async () => {
     try {
@@ -126,6 +184,42 @@ function Dashboard() {
         <p style={{ color: 'var(--text-secondary)' }}>
           {user?.role_name || 'User'} Dashboard
         </p>
+      </div>
+
+      <div className="banner-slider">
+        <div
+          className={`banner-slide ${isDragging ? 'dragging' : ''}`}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerEnd}
+          onPointerLeave={handlePointerEnd}
+          onPointerCancel={handlePointerEnd}
+        >
+          <div className="banner-slide-copy">
+            <span className="banner-badge">{slides[activeSlide].badge}</span>
+            <h2>{slides[activeSlide].title}</h2>
+            <p>{slides[activeSlide].text}</p>
+            <div className="banner-slider-controls">
+              {slides.map((_, index) => (
+                <button
+                  key={index}
+                  className={`slider-dot ${index === activeSlide ? 'active' : ''}`}
+                  type="button"
+                  onClick={() => setActiveSlide(index)}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="banner-slide-preview">
+            <div className="banner-slide-image">
+              <img
+                src={`/banner/${slides[activeSlide].image}`}
+                alt={slides[activeSlide].title}
+                className="banner-preview-img"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="stats-grid">
@@ -248,6 +342,7 @@ function Dashboard() {
           </div>
         )}
       </div>
+      {/* rencananya line ini mau saya kasih embed tiktok/yt buat hiburan admin */}
     </div>
   );
 }
