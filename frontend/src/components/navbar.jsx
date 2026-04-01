@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 
+//sebelum ngodong ucapkan bismillah
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { user, logout, isAdmin, isPeminjam } = useAuth();
